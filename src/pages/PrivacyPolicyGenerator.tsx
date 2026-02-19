@@ -21,14 +21,22 @@ import { processingItems } from '@/data/processingItems';
 const steps: Step[] = ['service-info', 'select-items', 'detail-input', 'preview', 'export'];
 
 export function PrivacyPolicyGenerator() {
-  const { 
-    currentStep, 
-    setStep, 
-    serviceInfo, 
-    selectedItems, 
-    completionRate,
-    reset 
+  const {
+    currentStep,
+    setStep,
+    serviceInfo,
+    selectedItems,
+    reset
   } = useAppStore();
+
+  const stepProgress: Record<string, number> = {
+    'service-info': 20,
+    'select-items': 40,
+    'detail-input': 60,
+    'preview': 80,
+    'export': 100,
+  };
+  const completionRate = stepProgress[currentStep] ?? 0;
 
   const currentIndex = steps.indexOf(currentStep);
   const isFirstStep = currentIndex === 0;
@@ -197,7 +205,7 @@ export function PrivacyPolicyGenerator() {
                 </Button>
               ) : (
                 <Button
-                  onClick={() => setStep('service-info')}
+                  onClick={handleReset}
                   variant="outline"
                 >
                   <RotateCcw className="w-4 h-4 mr-2" />

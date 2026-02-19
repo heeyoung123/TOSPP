@@ -37,7 +37,7 @@ const createEmptyDetailInput = (): DetailInput => ({
   overseasInfo: null,
 });
 
-const calculateCompletionRate = (
+export const calculateCompletionRate = (
   serviceInfo: ServiceInfo,
   selectedItems: ProcessingItemType[],
   detailInputs: Record<ProcessingItemType, DetailInput>
@@ -45,10 +45,11 @@ const calculateCompletionRate = (
   let total = 0;
   let completed = 0;
 
-  // Service info (20%)
+  // Service info (20%) — 필수 필드(3개)만 기준으로 계산
   total += 20;
-  const serviceInfoFilled = Object.values(serviceInfo).filter(v => v !== '').length;
-  completed += (serviceInfoFilled / Object.keys(serviceInfo).length) * 20;
+  const requiredFields = ['serviceName', 'companyName', 'contactEmail'] as const;
+  const filledRequired = requiredFields.filter(f => serviceInfo[f] !== '').length;
+  completed += (filledRequired / requiredFields.length) * 20;
 
   // Selected items (20%)
   total += 20;
@@ -56,18 +57,17 @@ const calculateCompletionRate = (
     completed += 20;
   }
 
-  // Detail inputs (60%)
+  // Detail inputs (60%) — 사용자가 직접 입력해야 점수가 오름
+  // purpose: 50pt (직접 입력), items: 40pt (태그 선택), retentionPeriod: 10pt (기본값 포함)
   total += 60;
   if (selectedItems.length > 0) {
     const detailProgress = selectedItems.reduce((acc, itemId) => {
       const input = detailInputs[itemId];
       if (!input) return acc;
       let itemScore = 0;
-      if (input.purpose) itemScore += 30;
-      if (input.items.length > 0 || input.customItems) itemScore += 30;
-      if (input.retentionPeriod) itemScore += 20;
-      if (!input.hasOutsourcing || input.outsourcingList.length > 0) itemScore += 10;
-      if (!input.hasThirdParty || input.thirdPartyList.length > 0) itemScore += 10;
+      if (input.purpose) itemScore += 50;
+      if (input.items.length > 0 || input.customItems) itemScore += 40;
+      if (input.retentionPeriod) itemScore += 10;
       return acc + itemScore;
     }, 0);
     completed += (detailProgress / (selectedItems.length * 100)) * 60;
@@ -150,7 +150,10 @@ export const useAppStore = create<AppState>()(
             outsourcingList: [...currentInput.outsourcingList, info]
           }
         };
-        set({ detailInputs: newDetailInputs });
+        set({
+          detailInputs: newDetailInputs,
+          completionRate: calculateCompletionRate(get().serviceInfo, get().selectedItems, newDetailInputs)
+        });
       },
 
       removeOutsourcing: (itemId: ProcessingItemType, outsourcingId: string) => {
@@ -162,7 +165,10 @@ export const useAppStore = create<AppState>()(
             outsourcingList: currentInput.outsourcingList.filter(o => o.id !== outsourcingId)
           }
         };
-        set({ detailInputs: newDetailInputs });
+        set({
+          detailInputs: newDetailInputs,
+          completionRate: calculateCompletionRate(get().serviceInfo, get().selectedItems, newDetailInputs)
+        });
       },
 
       addThirdParty: (itemId: ProcessingItemType, info: ThirdPartyInfo) => {
@@ -174,7 +180,10 @@ export const useAppStore = create<AppState>()(
             thirdPartyList: [...currentInput.thirdPartyList, info]
           }
         };
-        set({ detailInputs: newDetailInputs });
+        set({
+          detailInputs: newDetailInputs,
+          completionRate: calculateCompletionRate(get().serviceInfo, get().selectedItems, newDetailInputs)
+        });
       },
 
       removeThirdParty: (itemId: ProcessingItemType, thirdPartyId: string) => {
@@ -186,7 +195,10 @@ export const useAppStore = create<AppState>()(
             thirdPartyList: currentInput.thirdPartyList.filter(t => t.id !== thirdPartyId)
           }
         };
-        set({ detailInputs: newDetailInputs });
+        set({
+          detailInputs: newDetailInputs,
+          completionRate: calculateCompletionRate(get().serviceInfo, get().selectedItems, newDetailInputs)
+        });
       },
 
       setOverseasInfo: (itemId: ProcessingItemType, info: OverseasInfo) => {
@@ -198,7 +210,10 @@ export const useAppStore = create<AppState>()(
             overseasInfo: info
           }
         };
-        set({ detailInputs: newDetailInputs });
+        set({
+          detailInputs: newDetailInputs,
+          completionRate: calculateCompletionRate(get().serviceInfo, get().selectedItems, newDetailInputs)
+        });
       },
 
       setAdvancedMode: (isAdvanced: boolean) => set({ isAdvancedMode: isAdvanced }),
@@ -508,8 +523,7 @@ ${selectedItems.filter(itemId => {
         selectedItems: state.selectedItems,
         detailInputs: state.detailInputs,
         isAdvancedMode: state.isAdvancedMode,
-        completionRate: state.completionRate,
-      })
+      }),
     }
   )
 );

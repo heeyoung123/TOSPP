@@ -21,14 +21,22 @@ import { termsFeatures } from '@/data/termsFeatures';
 const steps: TermsStep[] = ['service-info', 'select-features', 'detail-input', 'preview', 'export'];
 
 export function TermsOfServiceGenerator() {
-  const { 
-    currentStep, 
-    setStep, 
-    serviceInfo, 
-    selectedFeatures, 
-    completionRate,
-    reset 
+  const {
+    currentStep,
+    setStep,
+    serviceInfo,
+    selectedFeatures,
+    reset
   } = useTermsStore();
+
+  const stepProgress: Record<string, number> = {
+    'service-info': 20,
+    'select-features': 40,
+    'detail-input': 60,
+    'preview': 80,
+    'export': 100,
+  };
+  const completionRate = stepProgress[currentStep] ?? 0;
 
   const currentIndex = steps.indexOf(currentStep);
   const isFirstStep = currentIndex === 0;
